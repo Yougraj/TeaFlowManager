@@ -32,7 +32,7 @@ export default function App() {
 
   const [syncConfig, setSyncConfig] = useState<SyncConfig>({
     clientId:
-      "920166951012-mk4j4fe0suu9be8rml96ec0vfvrrl3hf.apps.googleusercontent.com ", // standard test client
+      "920166951012-mk4j4fe0suu9be8rml96ec0vfvrrl3hf.apps.googleusercontent.com", // standard test client
     spreadsheetId: "",
     spreadsheetUrl: "",
     accessToken: null,
