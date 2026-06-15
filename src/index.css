@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Custom Warm Forest / Emerald colors */
+  --color-leaf-50: #f4f8f4;
+  --color-leaf-100: #e3ede3;
+  --color-leaf-200: #c6dac6;
+  --color-leaf-600: #2d6a4f;
+  --color-leaf-700: #1b4332;
+  --color-leaf-900: #081c15;
+
+  --color-harvest-50: #fefcf3;
+  --color-harvest-100: #fbf5df;
+  --color-harvest-600: #ca8a04;
+  --color-harvest-800: #854d0e;
+}
