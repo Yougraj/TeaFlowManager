@@ -113,6 +113,7 @@ async function getDb() {
   
   // If URI changed or no client exists, re-initialize
   if (latestUri !== currentUri || !dbClient) {
+    console.log("MongoDB: URI changed or client not initialized. Re-connecting...");
     currentUri = latestUri;
     dbConnected = false;
     dbClient = null;
@@ -120,19 +121,24 @@ async function getDb() {
 
   if (!dbConnected && currentUri) {
     try {
+      console.log("MongoDB: Attempting to connect to Atlas...");
       dbClient = new MongoClient(currentUri, {
-        connectTimeoutMS: 10000, // Increased for serverless stability
-        serverSelectionTimeoutMS: 10000,
+        connectTimeoutMS: 15000, // Increased for serverless stability
+        serverSelectionTimeoutMS: 15000,
+        appName: "TeaFlowNetlify"
       });
       await dbClient.connect();
       dbConnected = true;
-      console.log("Connected to MongoDB Atlas successfully!");
+      console.log("MongoDB: Connected to MongoDB Atlas successfully!");
     } catch (err) {
-      console.error("Connection failed for MongoDB Atlas:", err);
+      console.error("MongoDB: Connection failed for MongoDB Atlas:", err);
       dbConnected = false;
       dbClient = null;
     }
+  } else if (!currentUri) {
+    console.warn("MongoDB: MONGODB_URI is not defined. Using local file fallback.");
   }
+
   if (dbConnected && dbClient) {
     return dbClient.db(dbName);
   }

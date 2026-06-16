@@ -342,8 +342,9 @@ export default function DashboardView({
 
           <div className="h-64 w-full min-w-0 relative">
             {yieldChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <LineChart
+              <div className="h-full w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={100}>
+                  <LineChart
                   data={yieldChartData}
                   margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 >
@@ -379,8 +380,9 @@ export default function DashboardView({
                     dot={{ r: 3, fill: "#2d6a4f" }}
                   />
                 </LineChart>
-              </ResponsiveContainer>
-            ) : (
+                </ResponsiveContainer>
+                </div>
+                ) : (
               <div className="h-full flex items-center justify-center text-gray-400 text-sm font-sans italic">
                 No harvesting dates logged. Record today's harvest to populate
                 charts.
@@ -408,8 +410,9 @@ export default function DashboardView({
 
           <div className="h-64 w-full min-w-0 relative">
             {financialChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <BarChart
+              <div className="h-full w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={100}>
+                  <BarChart
                   data={financialChartData}
                   margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                 >
@@ -452,8 +455,9 @@ export default function DashboardView({
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
-              </ResponsiveContainer>
-            ) : (
+                </ResponsiveContainer>
+                </div>
+                ) : (
               <div className="h-full flex items-center justify-center text-gray-400 text-sm font-sans italic">
                 No transactions completed. Log some leaf sales to compare
                 balance trends.
