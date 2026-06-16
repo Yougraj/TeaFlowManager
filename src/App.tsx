@@ -180,7 +180,7 @@ export default function App() {
           "Content-Type": "application/json",
           "X-Admin-Email": currentUserEmail || "",
         },
-        body: JSON.stringify(w),
+        body: JSON.stringify(newW),
       });
     } catch (err) {
       console.error("Express API post workers failure:", err);
@@ -223,7 +223,7 @@ export default function App() {
           "Content-Type": "application/json",
           "X-Admin-Email": currentUserEmail || "",
         },
-        body: JSON.stringify(record),
+        body: JSON.stringify(newY),
       });
     } catch (err) {
       console.error("Express API post yields failure:", err);
@@ -290,7 +290,7 @@ export default function App() {
           "Content-Type": "application/json",
           "X-Admin-Email": currentUserEmail || "",
         },
-        body: JSON.stringify(s),
+        body: JSON.stringify(newS),
       });
     } catch (err) {
       console.error("Express API post sale failure:", err);
