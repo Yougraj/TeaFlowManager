@@ -1,20 +1,36 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# TeaFlow Manager - Valley Moss Estates
 
-# Run and deploy your AI Studio app
+Commercial-grade tea estate management platform for tracking plucking yields, managing workers, and syncing data to Google Sheets.
 
-This contains everything you need to run your app locally.
+## Deployment on Netlify
 
-View your app in AI Studio: https://ai.studio/apps/0eec6a4a-6b74-4bee-82a5-0115c5184d25
+This project is optimized for deployment on Netlify using Netlify Functions.
 
-## Run Locally
+1. **Connect your repository** to Netlify.
+2. **Environment Variables**: Set the following in Netlify (Site Settings > Build & Deploy > Environment):
+   - `MONGODB_URI`: Your MongoDB connection string.
+   - `VITE_FIREBASE_API_KEY`: Firebase API Key.
+   - `VITE_FIREBASE_AUTH_DOMAIN`: Firebase Auth Domain.
+   - `VITE_FIREBASE_PROJECT_ID`: Firebase Project ID.
+   - `VITE_FIREBASE_STORAGE_BUCKET`: Firebase Storage Bucket.
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`: Firebase Sender ID.
+   - `VITE_FIREBASE_APP_ID`: Firebase App ID.
+3. **Build Settings**:
+   - Build Command: `npm run build`
+   - Publish Directory: `dist`
+   - Functions Directory: `functions`
 
-**Prerequisites:**  Node.js
+## Features
 
+- **Dashboard**: Real-time analytics of yields and sales.
+- **Worker Management**: Track worker details and performance.
+- **Harvest Logging**: Daily yield entry with worker-level granularity.
+- **Sales Tracking**: Log sales and manage inventory.
+- **Google Sheets Sync**: Real-time export of data for corporate reporting.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Tech Stack
+
+- **Frontend**: React, TypeScript, Tailwind CSS, Lucide Icons.
+- **Backend**: Node.js, Express (running as Netlify Functions).
+- **Database**: MongoDB (Atlas recommended).
+- **Auth**: Firebase Authentication (Google Sign-In).

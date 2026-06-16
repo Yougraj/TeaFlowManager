@@ -97,21 +97,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                           Copy
                         </button>
                       </div>
-                      {window.location.hostname.includes('ais-dev-') && (
-                        <div className="flex items-center justify-between gap-1 p-1 bg-white border border-slate-100 rounded">
-                          <span>{window.location.hostname.replace('ais-dev-', 'ais-pre-')}</span>
-                          <button
-                            onClick={() => {
-                              const preDomain = window.location.hostname.replace('ais-dev-', 'ais-pre-');
-                              navigator.clipboard.writeText(preDomain);
-                              alert('Copied domain: ' + preDomain);
-                            }}
-                            className="px-1.5 py-0.5 text-[8px] bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded cursor-pointer uppercase font-sans"
-                          >
-                            Copy
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                   <ol className="list-decimal pl-4 space-y-1 block leading-normal text-amber-950">

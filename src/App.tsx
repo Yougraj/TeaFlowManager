@@ -29,17 +29,7 @@ export default function App() {
   const [yields, setYields] = useState<DailyYield[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
 
-  const [backendUrl, setBackendUrl] = useState<string>(() => {
-    return localStorage.getItem("estate_backend_api_url") || "";
-  });
   const [apiOnline, setApiOnline] = useState<boolean>(true);
-
-  const getFetchUrl = (endpoint: string) => {
-    if (!backendUrl) return endpoint;
-    const cleanBase = backendUrl.trim().replace(/\/+$/, "");
-    const cleanPath = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-    return `${cleanBase}${cleanPath}`;
-  };
 
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -97,7 +87,7 @@ export default function App() {
   // 2. Load Initially and setup status syncing
   const loadData = async () => {
     try {
-      const res = await fetch(getFetchUrl("/api/data"));
+      const res = await fetch("/api/data");
       if (res.ok) {
         setApiOnline(true);
         const body = await res.json();
@@ -149,7 +139,7 @@ export default function App() {
 
   const checkStatus = async () => {
     try {
-      const res = await fetch(getFetchUrl("/api/status"));
+      const res = await fetch("/api/status");
       if (res.ok) {
         const body = await res.json();
         setMongoStatus({
@@ -169,7 +159,7 @@ export default function App() {
     // Poll for live data every 4 seconds when online, 35 seconds when offline to prevent console spam
     const interval = setInterval(loadData, apiOnline ? 4000 : 35000);
     return () => clearInterval(interval);
-  }, [apiOnline, backendUrl]);
+  }, [apiOnline]);
 
   // 4. CRUD handlers executing on Backend Express Service with client-side optimistic UI updates
   const handleAddWorker = async (w: Omit<Worker, "id" | "createdAt">) => {
@@ -185,13 +175,13 @@ export default function App() {
     localStorage.setItem("estate_workers", JSON.stringify(updated));
 
     try {
-      await fetch(getFetchUrl("/api/workers"), {
+      await fetch("/api/workers", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Admin-Email": currentUserEmail || "",
         },
-        body: JSON.stringify(newW),
+        body: JSON.stringify(w),
       });
     } catch (err) {
       console.error("Express API post workers failure:", err);
@@ -204,7 +194,7 @@ export default function App() {
     localStorage.setItem("estate_workers", JSON.stringify(updatedList));
 
     try {
-      await fetch(getFetchUrl("/api/workers"), {
+      await fetch("/api/workers", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -228,13 +218,13 @@ export default function App() {
     localStorage.setItem("estate_yields", JSON.stringify(updatedList));
 
     try {
-      await fetch(getFetchUrl("/api/yields"), {
+      await fetch("/api/yields", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Admin-Email": currentUserEmail || "",
         },
-        body: JSON.stringify(newY),
+        body: JSON.stringify(record),
       });
     } catch (err) {
       console.error("Express API post yields failure:", err);
@@ -254,7 +244,7 @@ export default function App() {
     localStorage.setItem("estate_yields", JSON.stringify(updatedList));
 
     try {
-      await fetch(getFetchUrl("/api/yields"), {
+      await fetch("/api/yields", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -273,7 +263,7 @@ export default function App() {
     localStorage.setItem("estate_yields", JSON.stringify(updatedList));
 
     try {
-      await fetch(getFetchUrl(`/api/yields/${id}`), {
+      await fetch(`/api/yields/${id}`, {
         method: "DELETE",
         headers: {
           "X-Admin-Email": currentUserEmail || "",
@@ -295,13 +285,13 @@ export default function App() {
     localStorage.setItem("estate_sales", JSON.stringify(updatedList));
 
     try {
-      await fetch(getFetchUrl("/api/sales"), {
+      await fetch("/api/sales", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Admin-Email": currentUserEmail || "",
         },
-        body: JSON.stringify(newS),
+        body: JSON.stringify(s),
       });
     } catch (err) {
       console.error("Express API post sale failure:", err);
@@ -314,7 +304,7 @@ export default function App() {
     localStorage.setItem("estate_sales", JSON.stringify(updatedList));
 
     try {
-      await fetch(getFetchUrl(`/api/sales/${id}`), {
+      await fetch(`/api/sales/${id}`, {
         method: "DELETE",
         headers: {
           "X-Admin-Email": currentUserEmail || "",
@@ -341,7 +331,7 @@ export default function App() {
     localStorage.setItem("estate_sales", JSON.stringify(backup.sales || []));
 
     try {
-      await fetch(getFetchUrl("/api/data/import"), {
+      await fetch("/api/data/import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -363,7 +353,7 @@ export default function App() {
     localStorage.setItem("estate_sales", JSON.stringify([]));
 
     try {
-      await fetch(getFetchUrl("/api/data/wipe"), {
+      await fetch("/api/data/wipe", {
         method: "POST",
         headers: {
           "X-Admin-Email": currentUserEmail || "",
@@ -709,8 +699,7 @@ export default function App() {
                   <code className="bg-slate-800 px-1 py-0.5 rounded font-mono text-[10px] text-emerald-400">
                     MONGODB_URI
                   </code>{" "}
-                  connection string variable in the Settings panel of Google AI
-                  Studio.
+                  connection string variable in your hosting provider's environment variables.
                 </p>
               </div>
               <button
@@ -795,55 +784,25 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <span className="text-rose-500 text-sm">🌐</span>
                   <h4 className="text-[10px] font-bold uppercase tracking-widest text-rose-800">
-                    Static Hosting with no Server Proxy Detected (404 Resource
-                    Not Found)
+                    Backend Connection Issue
                   </h4>
                   <span className="text-[8px] bg-rose-100 text-rose-800 font-mono font-semibold px-2 py-0.5 rounded-full border border-rose-200 uppercase">
-                    Local Offline Fallback Mode Active
+                    Check Configuration
                   </span>
                 </div>
                 <p className="text-xs text-rose-900 leading-relaxed max-w-4xl">
-                  Your frontend is loaded from an external static server (like{" "}
-                  <strong className="font-semibold">Netlify</strong>) which
-                  cannot act as a proxy. Relative paths targeting{" "}
-                  <code className="bg-rose-100/50 px-1 py-0.5 rounded font-mono text-[11px] text-rose-950">
-                    /api/data
-                  </code>{" "}
-                  fell back to browser-local memory variables. To align this
-                  client live with your cloud storage, configure your{" "}
-                  <strong className="font-semibold">
-                    Cloud Run API Endpoint
-                  </strong>{" "}
-                  in the input box at the bottom, or click a fast-connect
-                  button.
+                  Your app is having trouble connecting to the database. Please ensure your environment variables are correctly configured on Netlify.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 self-stretch shrink-0 justify-end md:items-center">
                 <button
                   onClick={() => {
-                    const devUrl =
-                      "https://ais-dev-23ciyhqtn6vukwiecj2aiq-908472346283.asia-east1.run.app";
-                    setBackendUrl(devUrl);
-                    localStorage.setItem("estate_backend_api_url", devUrl);
                     setApiOnline(true);
+                    loadData();
                   }}
                   className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg text-2xs font-bold transition cursor-pointer text-center whitespace-nowrap shadow-3xs hover:scale-[1.01]"
-                  title="Auto-configure the developer container API microservice"
                 >
-                  ⚡ Connect Dev API
-                </button>
-                <button
-                  onClick={() => {
-                    const sharedUrl =
-                      "https://ais-pre-23ciyhqtn6vukwiecj2aiq-908472346283.asia-east1.run.app";
-                    setBackendUrl(sharedUrl);
-                    localStorage.setItem("estate_backend_api_url", sharedUrl);
-                    setApiOnline(true);
-                  }}
-                  className="px-3 py-1.5 bg-blue-800 hover:bg-blue-900 text-white rounded-lg text-2xs font-bold transition cursor-pointer text-center whitespace-nowrap shadow-3xs hover:scale-[1.01]"
-                  title="Auto-configure the Shared Preview container API microservice"
-                >
-                  🔗 Connect Shared API
+                  🔄 Retry Connection
                 </button>
               </div>
             </div>
@@ -898,37 +857,6 @@ export default function App() {
                 Valley Moss Estates
               </span>
               <span>© 2026 Commercial Leaf Ledger</span>
-            </div>
-
-            {/* Custom Backend API Connection URL for Cross-Origin Deployments (Netlify, etc.) */}
-            <div className="flex items-center gap-2 md:border-l md:border-gray-200 md:pl-4 flex-wrap">
-              <span className="text-gray-500 font-medium whitespace-nowrap">
-                API Endpoint:
-              </span>
-              <input
-                type="text"
-                value={backendUrl}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setBackendUrl(val);
-                  localStorage.setItem("estate_backend_api_url", val);
-                }}
-                placeholder="Relative Root (default /api)"
-                className="px-2.5 py-1 text-[10px] border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100/50 text-gray-700 w-48 sm:w-64 focus:outline-emerald-800 font-mono transition"
-                title="Specify your live Backend API URL (e.g., https://your-server.run.app) if hosting the frontend and backend on different providers"
-              />
-              {backendUrl && (
-                <button
-                  onClick={() => {
-                    setBackendUrl("");
-                    localStorage.removeItem("estate_backend_api_url");
-                  }}
-                  className="text-red-500 hover:text-red-700 font-bold px-1.5 py-0.5 text-xs transition-colors cursor-pointer"
-                  title="Clear custom endpoint and use relative pathing"
-                >
-                  ✕
-                </button>
-              )}
             </div>
           </div>
           <div className="flex items-center gap-3">
