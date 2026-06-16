@@ -11,13 +11,30 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+
+// CORS Headers Middleware to support Cross-Origin requests from static hosting environments like Netlify
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS",
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, X-Admin-Email, Authorization",
+  );
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // List of authorized administrator emails
 const ALLOWED_MANAGERS = [
   "yougrajbora1@gmail.com",
   "yougrajbora.developer@gmail.com",
-  "yougrajbora5683@gmail.com"
+  "yougrajbora5683@gmail.com",
 ];
 
 // Authorization Middleware to prevent unauthorized mutative actions
@@ -26,12 +43,20 @@ app.use((req, res, next) => {
   if (req.method !== "GET" && req.path !== "/api/status") {
     const adminEmail = req.headers["x-admin-email"];
     if (!adminEmail || typeof adminEmail !== "string") {
-      return res.status(403).json({ error: "Access Denied: Only authorized estate admins are permitted to make modifications." });
+      return res.status(403).json({
+        error:
+          "Access Denied: Only authorized estate admins are permitted to make modifications.",
+      });
     }
     const cleanEmail = adminEmail.toLowerCase().trim();
-    const isAllowed = ALLOWED_MANAGERS.map(e => e.toLowerCase().trim()).includes(cleanEmail);
+    const isAllowed = ALLOWED_MANAGERS.map((e) =>
+      e.toLowerCase().trim(),
+    ).includes(cleanEmail);
     if (!isAllowed) {
-      return res.status(403).json({ error: "Access Denied: Only authorized estate admins are permitted to make modifications." });
+      return res.status(403).json({
+        error:
+          "Access Denied: Only authorized estate admins are permitted to make modifications.",
+      });
     }
   }
   next();
@@ -55,7 +80,10 @@ function resolveMongoUri(): string | undefined {
           const key = trimmed.substring(0, eqIdx).trim();
           if (key === "MONGODB_URI") {
             let val = trimmed.substring(eqIdx + 1).trim();
-            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            if (
+              (val.startsWith('"') && val.endsWith('"')) ||
+              (val.startsWith("'") && val.endsWith("'"))
+            ) {
               val = val.slice(1, -1);
             }
             return val;
@@ -64,7 +92,10 @@ function resolveMongoUri(): string | undefined {
       }
     }
   } catch (error) {
-    console.error("Error loading fallback custom MONGODB_URI from .env.example:", error);
+    console.error(
+      "Error loading fallback custom MONGODB_URI from .env.example:",
+      error,
+    );
   }
   return undefined;
 }
@@ -86,7 +117,7 @@ async function getDb() {
     try {
       dbClient = new MongoClient(currentUri, {
         connectTimeoutMS: 5000,
-        serverSelectionTimeoutMS: 5000
+        serverSelectionTimeoutMS: 5000,
       });
       await dbClient.connect();
       dbConnected = true;
@@ -118,7 +149,10 @@ function readFallback(): FallbackData {
       const content = fs.readFileSync(FALLBACK_FILE, "utf-8");
       return JSON.parse(content);
     } catch (e) {
-      console.error("Failed to parse fallback database JSON, resetting file:", e);
+      console.error(
+        "Failed to parse fallback database JSON, resetting file:",
+        e,
+      );
     }
   }
   return { workers: [], yields: [], sales: [] };
@@ -147,7 +181,7 @@ app.get("/api/status", async (req, res) => {
     connected: !!db,
     provider: db ? "mongodb" : "file_fallback",
     uriConfigured: !!resolvedUri,
-    projectId: resolvedUri ? "configured" : "none"
+    projectId: resolvedUri ? "configured" : "none",
   });
 });
 
@@ -159,19 +193,20 @@ app.get("/api/data", async (req, res) => {
       const workers = await db.collection("workers").find({}).toArray();
       const yields = await db.collection("yields").find({}).toArray();
       const sales = await db.collection("sales").find({}).toArray();
-      
+
       // Clean Mongo _id elements to prevent React errors and map beautifully
-      const cleanList = (arr: any[]) => arr.map(item => {
-        const { _id, ...rest } = item;
-        return rest;
-      });
+      const cleanList = (arr: any[]) =>
+        arr.map((item) => {
+          const { _id, ...rest } = item;
+          return rest;
+        });
 
       res.json({
         workers: cleanList(workers),
         yields: cleanList(yields),
         sales: cleanList(sales),
         mongoConnected: true,
-        fallbackUsed: false
+        fallbackUsed: false,
       });
     } else {
       const fallback = readFallback();
@@ -180,7 +215,7 @@ app.get("/api/data", async (req, res) => {
         yields: fallback.yields,
         sales: fallback.sales,
         mongoConnected: false,
-        fallbackUsed: true
+        fallbackUsed: true,
       });
     }
   } catch (err: any) {
@@ -199,18 +234,18 @@ app.post("/api/workers", async (req, res) => {
     const db = await getDb();
     if (db) {
       const { _id, ...workerData } = worker;
-      await db.collection("workers").updateOne(
-        { id: worker.id },
-        { $set: workerData },
-        { upsert: true }
-      );
+      await db
+        .collection("workers")
+        .updateOne({ id: worker.id }, { $set: workerData }, { upsert: true });
       res.json({ success: true, worker });
     } else {
       const fallback = readFallback();
-      const exists = fallback.workers.some(w => w.id === worker.id);
+      const exists = fallback.workers.some((w) => w.id === worker.id);
       let updatedWorkers;
       if (exists) {
-        updatedWorkers = fallback.workers.map(w => w.id === worker.id ? worker : w);
+        updatedWorkers = fallback.workers.map((w) =>
+          w.id === worker.id ? worker : w,
+        );
       } else {
         updatedWorkers = [...fallback.workers, worker];
       }
@@ -233,18 +268,18 @@ app.post("/api/yields", async (req, res) => {
     const db = await getDb();
     if (db) {
       const { _id, ...recordData } = record;
-      await db.collection("yields").updateOne(
-        { id: record.id },
-        { $set: recordData },
-        { upsert: true }
-      );
+      await db
+        .collection("yields")
+        .updateOne({ id: record.id }, { $set: recordData }, { upsert: true });
       res.json({ success: true, record });
     } else {
       const fallback = readFallback();
-      const exists = fallback.yields.some(y => y.id === record.id);
+      const exists = fallback.yields.some((y) => y.id === record.id);
       let updatedYields;
       if (exists) {
-        updatedYields = fallback.yields.map(y => y.id === record.id ? record : y);
+        updatedYields = fallback.yields.map((y) =>
+          y.id === record.id ? record : y,
+        );
       } else {
         updatedYields = [...fallback.yields, record];
       }
@@ -267,7 +302,7 @@ app.delete("/api/yields/:id", async (req, res) => {
       res.json({ success: true });
     } else {
       const fallback = readFallback();
-      const updatedYields = fallback.yields.filter(y => y.id !== id);
+      const updatedYields = fallback.yields.filter((y) => y.id !== id);
       writeFallback({ ...fallback, yields: updatedYields });
       res.json({ success: true });
     }
@@ -287,18 +322,16 @@ app.post("/api/sales", async (req, res) => {
     const db = await getDb();
     if (db) {
       const { _id, ...saleData } = sale;
-      await db.collection("sales").updateOne(
-        { id: sale.id },
-        { $set: saleData },
-        { upsert: true }
-      );
+      await db
+        .collection("sales")
+        .updateOne({ id: sale.id }, { $set: saleData }, { upsert: true });
       res.json({ success: true, sale });
     } else {
       const fallback = readFallback();
-      const exists = fallback.sales.some(s => s.id === sale.id);
+      const exists = fallback.sales.some((s) => s.id === sale.id);
       let updatedSales;
       if (exists) {
-        updatedSales = fallback.sales.map(s => s.id === sale.id ? sale : s);
+        updatedSales = fallback.sales.map((s) => (s.id === sale.id ? sale : s));
       } else {
         updatedSales = [...fallback.sales, sale];
       }
@@ -321,7 +354,7 @@ app.delete("/api/sales/:id", async (req, res) => {
       res.json({ success: true });
     } else {
       const fallback = readFallback();
-      const updatedSales = fallback.sales.filter(s => s.id !== id);
+      const updatedSales = fallback.sales.filter((s) => s.id !== id);
       writeFallback({ ...fallback, sales: updatedSales });
       res.json({ success: true });
     }
@@ -355,7 +388,7 @@ app.post("/api/data/import", async (req, res) => {
       writeFallback({
         workers: workers || [],
         yields: yields || [],
-        sales: sales || []
+        sales: sales || [],
       });
       res.json({ success: true });
     }
@@ -389,7 +422,7 @@ async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa"
+      appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
@@ -401,10 +434,12 @@ async function startServer() {
   }
 
   // Pre-connect dynamically
-  getDb().catch(e => console.error("Initial database connection error:", e));
+  getDb().catch((e) => console.error("Initial database connection error:", e));
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Express server powering tea estate management on http://localhost:${PORT}`);
+    console.log(
+      `Express server powering tea estate management on http://localhost:${PORT}`,
+    );
   });
 }
 
