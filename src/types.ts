@@ -36,16 +36,6 @@ export interface Sale {
   notes: string;
 }
 
-export interface SyncConfig {
-  clientId: string;
-  spreadsheetId: string;
-  spreadsheetUrl: string;
-  accessToken: string | null;
-  tokenExpiresAt: number | null; // epoch ms
-  isLinked: boolean;
-  lastSyncedAt: string | null;
-}
-
 export const ALLOWED_MANAGERS = [
   'yougrajbora1@gmail.com',
   'yougrajbora.developer@gmail.com',

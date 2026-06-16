@@ -1,6 +1,6 @@
 # TeaFlow Manager - Valley Moss Estates
 
-Commercial-grade tea estate management platform for tracking plucking yields, managing workers, and syncing data to Google Sheets.
+Commercial-grade tea estate management platform for tracking plucking yields, managing workers, and recording sales.
 
 ## Deployment on Netlify
 
@@ -26,7 +26,6 @@ This project is optimized for deployment on Netlify using Netlify Functions.
 - **Worker Management**: Track worker details and performance.
 - **Harvest Logging**: Daily yield entry with worker-level granularity.
 - **Sales Tracking**: Log sales and manage inventory.
-- **Google Sheets Sync**: Real-time export of data for corporate reporting.
 
 ## Tech Stack
 

@@ -13,7 +13,6 @@ import {
   Coins,
   DollarSign,
   PlusCircle,
-  FileSpreadsheet
 } from 'lucide-react';
 
 interface HarvestYieldProps {

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Chrome, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import { googleSignIn } from '../utils/firebaseAuth';
-import firebaseConfig from '../../firebase-applet-config.json';
+
+const firebaseProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'your-project';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -80,7 +81,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                 <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-[11px] text-amber-900 space-y-2.5">
                   <p className="font-bold uppercase tracking-wider text-[9px] text-amber-800">How to Fix (Authorized Domains)</p>
                   <p className="leading-relaxed">
-                    Because you are using your custom Firebase project <strong className="font-semibold text-amber-950">"{firebaseConfig.projectId || 'your-project'}"</strong>, you must authorize this development workspace domain in your Firebase console.
+                    Because you are using your custom Firebase project <strong className="font-semibold text-amber-950">"{firebaseProjectId}"</strong>, you must authorize this development workspace domain in your Firebase console.
                   </p>
                   <div className="space-y-2 bg-white/70 p-2.5 rounded-lg border border-amber-200">
                     <p className="font-semibold text-[10px] text-amber-800">DOMAINS TO ADD IN FIREBASE:</p>
@@ -100,7 +101,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                     </div>
                   </div>
                   <ol className="list-decimal pl-4 space-y-1 block leading-normal text-amber-950">
-                    <li>Open your <a href={`https://console.firebase.google.com/project/${firebaseConfig.projectId || 'teaflowmanage'}/authentication/providers`} target="_blank" rel="noreferrer" className="underline font-semibold hover:text-amber-800 inline-flex items-center gap-0.5">Firebase Console <ExternalLink className="w-3.5 h-3.5 inline mb-0.5" /></a></li>
+                    <li>Open your <a href={`https://console.firebase.google.com/project/${firebaseProjectId}/authentication/providers`} target="_blank" rel="noreferrer" className="underline font-semibold hover:text-amber-800 inline-flex items-center gap-0.5">Firebase Console <ExternalLink className="w-3.5 h-3.5 inline mb-0.5" /></a></li>
                     <li>Go to <strong className="font-semibold">Authentication &gt; Settings &gt; Authorized domains</strong>.</li>
                     <li>Click <strong className="font-semibold">Add domain</strong> and paste the domains above.</li>
                     <li>Reload this app and try signing in again!</li>
@@ -143,7 +144,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
           {/* Footnotes */}
           <div className="mt-6 pt-4 border-t border-gray-100 text-center">
             <p className="text-[10px] text-gray-400 font-sans">
-              Authorized operators can log plucking yields, manage employee wages and sync to Google Sheets.
+              Authorized operators can log plucking yields, manage employee wages and track estate operations.
             </p>
           </div>
         </div>

@@ -17,7 +17,6 @@ import {
   Info,
   CalendarCheck,
   CheckCircle,
-  FileSpreadsheet,
 } from "lucide-react";
 
 export default function App() {
