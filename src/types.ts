@@ -45,3 +45,10 @@ export interface SyncConfig {
   isLinked: boolean;
   lastSyncedAt: string | null;
 }
+
+export const ALLOWED_MANAGERS = [
+  'yougrajbora1@gmail.com',
+  'yougrajbora.developer@gmail.com',
+  'yougrajbora5683@gmail.com'
+];
+

@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
+import { ALLOWED_MANAGERS } from '../types';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -22,6 +23,14 @@ export const initAuth = (
 ) => {
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
+      const email = user.email ? user.email.toLowerCase().trim() : '';
+      const isAllowed = ALLOWED_MANAGERS.map(e => e.toLowerCase().trim()).includes(email);
+      if (!isAllowed) {
+        await auth.signOut();
+        cachedAccessToken = null;
+        if (onAuthFailure) onAuthFailure();
+        return;
+      }
       if (cachedAccessToken) {
         if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
       } else if (!isSigningIn) {
@@ -43,6 +52,14 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     const credential = GoogleAuthProvider.credentialFromResult(result);
     if (!credential?.accessToken) {
       throw new Error('Failed to get access token from Firebase Auth');
+    }
+
+    const email = result.user.email ? result.user.email.toLowerCase().trim() : '';
+    const isAllowed = ALLOWED_MANAGERS.map(e => e.toLowerCase().trim()).includes(email);
+    if (!isAllowed) {
+      await auth.signOut();
+      cachedAccessToken = null;
+      throw new Error('Access Denied: Log in is restricted to authorized estate managers. Only allowed admin users are permitted to authenticate.');
     }
 
     cachedAccessToken = credential.accessToken;

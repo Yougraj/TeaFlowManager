@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Worker, DailyYield, Sale } from './types';
+import { Worker, DailyYield, Sale, ALLOWED_MANAGERS } from './types';
 import { initAuth, googleSignIn, logout } from './utils/firebaseAuth';
 import DashboardView from './components/DashboardView';
 import WorkersView from './components/WorkersView';
@@ -44,8 +44,7 @@ export default function App() {
   });
 
   // Computed role values
-  const allowedEditors = ['yougrajbora1@gmail.com', 'yougrajbora.developer@gmail.com'];
-  const isEditor = currentUserEmail !== null && allowedEditors.includes(currentUserEmail.toLowerCase().trim());
+  const isEditor = currentUserEmail !== null && ALLOWED_MANAGERS.map(e => e.toLowerCase().trim()).includes(currentUserEmail.toLowerCase().trim());
 
   // 1.5 Setup Auth Persistence listener
   useEffect(() => {
@@ -139,7 +138,8 @@ export default function App() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(checkStatus, 15000);
+    // Poll for live data every 4 seconds so modifications reflect instantly for all viewers
+    const interval = setInterval(loadData, 4000);
     return () => clearInterval(interval);
   }, []);
 
@@ -161,7 +161,10 @@ export default function App() {
     try {
       await fetch('/api/workers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-Email': currentUserEmail || ''
+        },
         body: JSON.stringify(newW)
       });
     } catch (err) {
@@ -177,7 +180,10 @@ export default function App() {
     try {
       await fetch('/api/workers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-Email': currentUserEmail || ''
+        },
         body: JSON.stringify(updated)
       });
     } catch (err) {
@@ -198,7 +204,10 @@ export default function App() {
     try {
       await fetch('/api/yields', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-Email': currentUserEmail || ''
+        },
         body: JSON.stringify(newY)
       });
     } catch (err) {
@@ -218,7 +227,10 @@ export default function App() {
     try {
       await fetch('/api/yields', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-Email': currentUserEmail || ''
+        },
         body: JSON.stringify(updated)
       });
     } catch (err) {
@@ -233,7 +245,10 @@ export default function App() {
 
     try {
       await fetch(`/api/yields/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Email': currentUserEmail || ''
+        }
       });
     } catch (err) {
       console.error("Express API delete yield failure:", err);
@@ -253,7 +268,10 @@ export default function App() {
     try {
       await fetch('/api/sales', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-Email': currentUserEmail || ''
+        },
         body: JSON.stringify(newS)
       });
     } catch (err) {
@@ -268,7 +286,10 @@ export default function App() {
 
     try {
       await fetch(`/api/sales/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Email': currentUserEmail || ''
+        }
       });
     } catch (err) {
       console.error("Express API delete sale failure:", err);
@@ -286,7 +307,10 @@ export default function App() {
     try {
       await fetch('/api/data/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-Email': currentUserEmail || ''
+        },
         body: JSON.stringify(backup)
       });
     } catch (err) {
@@ -304,7 +328,10 @@ export default function App() {
 
     try {
       await fetch('/api/data/wipe', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'X-Admin-Email': currentUserEmail || ''
+        }
       });
     } catch (err) {
       console.error("Express API post wipe failure:", err);
@@ -606,7 +633,7 @@ export default function App() {
                   <h4 className="text-xs sm:text-xs font-bold text-amber-900 font-sans uppercase tracking-wider">Valley Moss Ledger View-Only Mode</h4>
                   <p className="text-[11px] text-amber-700 leading-relaxed font-sans mt-0.5">
                     {currentUserEmail ? (
-                      <>Account <strong className="font-mono text-amber-900 font-semibold">{currentUserEmail}</strong> has read-only access. Only authorized managers (<code className="font-mono bg-amber-100 px-1 py-0.5 rounded text-[10px]">yougrajbora1@gmail.com</code> or <code className="font-mono bg-amber-100 px-1 py-0.5 rounded text-[10px]">yougrajbora.developer@gmail.com</code>) can create logs or edit worker states.</>
+                      <>Account <strong className="font-mono text-amber-900 font-semibold">{currentUserEmail}</strong> has read-only access. Only authorized managers ({ALLOWED_MANAGERS.map((e, idx) => <span key={e}><code className="font-mono bg-amber-100 px-1 py-0.5 rounded text-[10px]">{e}</code>{idx < ALLOWED_MANAGERS.length - 1 ? ' or ' : ''}</span>)}) can create logs or edit worker states.</>
                     ) : (
                       <>Spectator view. Log in with an approved manager credential to register pluckers, record yields, or finalize trades.</>
                     )}

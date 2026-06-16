@@ -9,6 +9,30 @@ const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
+// List of authorized administrator emails
+const ALLOWED_MANAGERS = [
+  "yougrajbora1@gmail.com",
+  "yougrajbora.developer@gmail.com",
+  "yougrajbora5683@gmail.com"
+];
+
+// Authorization Middleware to prevent unauthorized mutative actions
+app.use((req, res, next) => {
+  // Allow normal GET queries, static assets, and system health checks
+  if (req.method !== "GET" && req.path !== "/api/status") {
+    const adminEmail = req.headers["x-admin-email"];
+    if (!adminEmail || typeof adminEmail !== "string") {
+      return res.status(403).json({ error: "Access Denied: Only authorized estate admins are permitted to make modifications." });
+    }
+    const cleanEmail = adminEmail.toLowerCase().trim();
+    const isAllowed = ALLOWED_MANAGERS.map(e => e.toLowerCase().trim()).includes(cleanEmail);
+    if (!isAllowed) {
+      return res.status(403).json({ error: "Access Denied: Only authorized estate admins are permitted to make modifications." });
+    }
+  }
+  next();
+});
+
 // Setup MongoDB Connection logic
 const dbName = "teaflow";
 let currentUri = process.env.MONGODB_URI;
