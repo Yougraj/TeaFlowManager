@@ -3,6 +3,10 @@ import path from "path";
 import fs from "fs";
 import { MongoClient } from "mongodb";
 import { createServer as createViteServer } from "vite";
+import dotenv from "dotenv";
+
+// Load configuration variables from standard .env file if it exists
+dotenv.config();
 
 const app = express();
 const PORT = 3000;
@@ -33,15 +37,48 @@ app.use((req, res, next) => {
   next();
 });
 
+// Resolve MongoDB URI prioritizing actual environment variables first, falling back to .env.example file
+function resolveMongoUri(): string | undefined {
+  if (process.env.MONGODB_URI) {
+    return process.env.MONGODB_URI;
+  }
+  try {
+    const examplePath = path.join(process.cwd(), ".env.example");
+    if (fs.existsSync(examplePath)) {
+      const content = fs.readFileSync(examplePath, "utf-8");
+      const lines = content.split(/\r?\n/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("#")) continue;
+        const eqIdx = trimmed.indexOf("=");
+        if (eqIdx !== -1) {
+          const key = trimmed.substring(0, eqIdx).trim();
+          if (key === "MONGODB_URI") {
+            let val = trimmed.substring(eqIdx + 1).trim();
+            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+              val = val.slice(1, -1);
+            }
+            return val;
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error loading fallback custom MONGODB_URI from .env.example:", error);
+  }
+  return undefined;
+}
+
 // Setup MongoDB Connection logic
 const dbName = "teaflow";
-let currentUri = process.env.MONGODB_URI;
+let currentUri = resolveMongoUri();
 let dbClient: MongoClient | null = null;
 let dbConnected = false;
 
 async function getDb() {
-  if (process.env.MONGODB_URI !== currentUri) {
-    currentUri = process.env.MONGODB_URI;
+  const latestUri = resolveMongoUri();
+  if (latestUri !== currentUri) {
+    currentUri = latestUri;
     dbConnected = false;
     dbClient = null;
   }
@@ -105,11 +142,12 @@ if (!fs.existsSync(FALLBACK_FILE)) {
 // 1. Connection status endpoint
 app.get("/api/status", async (req, res) => {
   const db = await getDb();
+  const resolvedUri = resolveMongoUri();
   res.json({
     connected: !!db,
     provider: db ? "mongodb" : "file_fallback",
-    uriConfigured: !!process.env.MONGODB_URI,
-    projectId: process.env.MONGODB_URI ? "configured" : "none"
+    uriConfigured: !!resolvedUri,
+    projectId: resolvedUri ? "configured" : "none"
   });
 });
 
