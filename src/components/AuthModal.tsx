@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Chrome, AlertTriangle, X } from 'lucide-react';
+import { ShieldCheck, Chrome, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import { googleSignIn } from '../utils/firebaseAuth';
+import firebaseConfig from '../../firebase-applet-config.json';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -66,12 +67,61 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         {/* Modal Body */}
         <div className="p-6">
           {errorMsg && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-150 rounded-xl text-[11px] text-rose-700 flex gap-2 leading-relaxed animate-in shrink-0">
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold uppercase tracking-wider text-[9px] mb-0.5">Authentication Issue Detected</p>
-                <p>{errorMsg}</p>
+            <div className="space-y-3 mb-4">
+              <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-[11px] text-rose-700 flex gap-2 leading-relaxed shrink-0">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold uppercase tracking-wider text-[9px] mb-0.5">Authentication Issue Detected</p>
+                  <p>{errorMsg}</p>
+                </div>
               </div>
+
+              {(errorMsg.includes('unauthorized-domain') || errorMsg.includes('auth/unauthorized-domain')) && (
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-[11px] text-amber-900 space-y-2.5">
+                  <p className="font-bold uppercase tracking-wider text-[9px] text-amber-800">How to Fix (Authorized Domains)</p>
+                  <p className="leading-relaxed">
+                    Because you are using your custom Firebase project <strong className="font-semibold text-amber-950">"{firebaseConfig.projectId || 'your-project'}"</strong>, you must authorize this development workspace domain in your Firebase console.
+                  </p>
+                  <div className="space-y-2 bg-white/70 p-2.5 rounded-lg border border-amber-200">
+                    <p className="font-semibold text-[10px] text-amber-800">DOMAINS TO ADD IN FIREBASE:</p>
+                    <div className="space-y-1 text-[10px] font-mono break-all text-slate-800">
+                      <div className="flex items-center justify-between gap-1 p-1 bg-white border border-slate-100 rounded">
+                        <span>{window.location.hostname}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.hostname);
+                            alert('Copied domain: ' + window.location.hostname);
+                          }}
+                          className="px-1.5 py-0.5 text-[8px] bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded cursor-pointer uppercase font-sans"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      {window.location.hostname.includes('ais-dev-') && (
+                        <div className="flex items-center justify-between gap-1 p-1 bg-white border border-slate-100 rounded">
+                          <span>{window.location.hostname.replace('ais-dev-', 'ais-pre-')}</span>
+                          <button
+                            onClick={() => {
+                              const preDomain = window.location.hostname.replace('ais-dev-', 'ais-pre-');
+                              navigator.clipboard.writeText(preDomain);
+                              alert('Copied domain: ' + preDomain);
+                            }}
+                            className="px-1.5 py-0.5 text-[8px] bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded cursor-pointer uppercase font-sans"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <ol className="list-decimal pl-4 space-y-1 block leading-normal text-amber-950">
+                    <li>Open your <a href={`https://console.firebase.google.com/project/${firebaseConfig.projectId || 'teaflowmanage'}/authentication/providers`} target="_blank" rel="noreferrer" className="underline font-semibold hover:text-amber-800 inline-flex items-center gap-0.5">Firebase Console <ExternalLink className="w-3.5 h-3.5 inline mb-0.5" /></a></li>
+                    <li>Go to <strong className="font-semibold">Authentication &gt; Settings &gt; Authorized domains</strong>.</li>
+                    <li>Click <strong className="font-semibold">Add domain</strong> and paste the domains above.</li>
+                    <li>Reload this app and try signing in again!</li>
+                  </ol>
+                </div>
+              )}
             </div>
           )}
 

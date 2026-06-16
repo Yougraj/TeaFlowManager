@@ -28,7 +28,7 @@ interface DashboardProps {
   workers: Worker[];
   yields: DailyYield[];
   sales: Sale[];
-  onNavigate: (view: 'dashboard' | 'workers' | 'yield' | 'sales' | 'sync') => void;
+  onNavigate: (view: 'dashboard' | 'workers' | 'yield' | 'sales') => void;
 }
 
 export default function DashboardView({ workers, yields, sales, onNavigate }: DashboardProps) {
@@ -129,20 +129,13 @@ export default function DashboardView({ workers, yields, sales, onNavigate }: Da
             Real-time analytics, daily leaf plucking yields, advance cash tracking, and tea trade metrics.
           </p>
         </div>
-        <div className="mt-4 md:mt-0 flex gap-3">
+        <div className="mt-4 md:mt-0 flex gap-3 block">
           <button
             id="nav-to-yield-btn"
             onClick={() => onNavigate('yield')}
-            className="px-4 py-2 border border-leaf-600 text-leaf-700 bg-transparent hover:bg-leaf-50 rounded-lg text-sm font-medium transition cursor-pointer"
+            className="px-4 py-2 border border-leaf-600 text-leaf-700 bg-transparent hover:bg-leaf-50 rounded-lg text-sm font-medium transition cursor-pointer font-sans"
           >
             Record Harvest
-          </button>
-          <button
-            id="nav-to-sync-btn"
-            onClick={() => onNavigate('sync')}
-            className="px-4 py-2 bg-leaf-700 hover:bg-leaf-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-1 cursor-pointer"
-          >
-            Google Sheets Status
           </button>
         </div>
       </div>

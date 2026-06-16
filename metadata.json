@@ -1,6 +1,6 @@
 {
   "name": "Tea Estate Manager",
-  "description": "Full-stack tea estate management system to track employees, daily leaf yield, wages, cash advances, and product sales, fully backed by Google Sheets and Google Drive.",
+  "description": "Full-stack tea estate management system to track employees, daily leaf yield, wages, cash advances, and product sales, fully backed by MongoDB Atlas.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
