@@ -101,8 +101,6 @@ function resolveMongoUri(): string | undefined {
   return undefined;
 }
 
-const dbName = "teaflow";
-
 // Global cached connection for serverless environments
 let cachedClient: MongoClient | null = null;
 let cachedDb: any = null;
@@ -138,14 +136,18 @@ async function getDb() {
     });
     
     await client.connect();
-    const db = client.db(dbName);
+    
+    // Use db name from URI or default to teaflow
+    const db = client.db(); 
+    const effectiveDbName = db.databaseName || "teaflow";
+    const targetDb = client.db(effectiveDbName);
     
     // Cache the client and db for subsequent invocations
     cachedClient = client;
-    cachedDb = db;
+    cachedDb = targetDb;
     
-    console.log("MongoDB: Connected to Atlas successfully.");
-    return db;
+    console.log(`MongoDB: Connected to Atlas successfully (Database: ${effectiveDbName}).`);
+    return targetDb;
   } catch (err: any) {
     console.error("MongoDB: Connection error:", err.message);
     // Explicitly check for common errors
