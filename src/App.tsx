@@ -785,6 +785,70 @@ export default function App() {
             </div>
           )}
 
+          {/* Static Hosting Cross-Origin API Helper */}
+          {!apiOnline && (
+            <div
+              className="bg-rose-50 border border-rose-200 text-rose-950 rounded-xl p-5 shadow-3xs flex flex-col md:flex-row items-start justify-between gap-4 animate-in fade-in duration-500 font-sans"
+              id="api-offline-guide"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-rose-500 text-sm">🌐</span>
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-rose-800">
+                    Static Hosting with no Server Proxy Detected (404 Resource
+                    Not Found)
+                  </h4>
+                  <span className="text-[8px] bg-rose-100 text-rose-800 font-mono font-semibold px-2 py-0.5 rounded-full border border-rose-200 uppercase">
+                    Local Offline Fallback Mode Active
+                  </span>
+                </div>
+                <p className="text-xs text-rose-900 leading-relaxed max-w-4xl">
+                  Your frontend is loaded from an external static server (like{" "}
+                  <strong className="font-semibold">Netlify</strong>) which
+                  cannot act as a proxy. Relative paths targeting{" "}
+                  <code className="bg-rose-100/50 px-1 py-0.5 rounded font-mono text-[11px] text-rose-950">
+                    /api/data
+                  </code>{" "}
+                  fell back to browser-local memory variables. To align this
+                  client live with your cloud storage, configure your{" "}
+                  <strong className="font-semibold">
+                    Cloud Run API Endpoint
+                  </strong>{" "}
+                  in the input box at the bottom, or click a fast-connect
+                  button.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 self-stretch shrink-0 justify-end md:items-center">
+                <button
+                  onClick={() => {
+                    const devUrl =
+                      "https://ais-dev-23ciyhqtn6vukwiecj2aiq-908472346283.asia-east1.run.app";
+                    setBackendUrl(devUrl);
+                    localStorage.setItem("estate_backend_api_url", devUrl);
+                    setApiOnline(true);
+                  }}
+                  className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg text-2xs font-bold transition cursor-pointer text-center whitespace-nowrap shadow-3xs hover:scale-[1.01]"
+                  title="Auto-configure the developer container API microservice"
+                >
+                  ⚡ Connect Dev API
+                </button>
+                <button
+                  onClick={() => {
+                    const sharedUrl =
+                      "https://ais-pre-23ciyhqtn6vukwiecj2aiq-908472346283.asia-east1.run.app";
+                    setBackendUrl(sharedUrl);
+                    localStorage.setItem("estate_backend_api_url", sharedUrl);
+                    setApiOnline(true);
+                  }}
+                  className="px-3 py-1.5 bg-blue-800 hover:bg-blue-900 text-white rounded-lg text-2xs font-bold transition cursor-pointer text-center whitespace-nowrap shadow-3xs hover:scale-[1.01]"
+                  title="Auto-configure the Shared Preview container API microservice"
+                >
+                  🔗 Connect Shared API
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Render screens depending on tab selection */}
           {activeTab === "dashboard" && (
             <DashboardView
