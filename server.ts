@@ -4,12 +4,13 @@ import fs from "fs";
 import { MongoClient } from "mongodb";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import serverless from "serverless-http";
 
 // Load configuration variables from standard .env file if it exists
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -68,6 +69,7 @@ function resolveMongoUri(): string | undefined {
     return process.env.MONGODB_URI;
   }
   try {
+    // In production/serverless, we should prioritize env vars and not strictly rely on filesystem
     const examplePath = path.join(process.cwd(), ".env.example");
     if (fs.existsSync(examplePath)) {
       const content = fs.readFileSync(examplePath, "utf-8");
@@ -108,22 +110,25 @@ let dbConnected = false;
 
 async function getDb() {
   const latestUri = resolveMongoUri();
-  if (latestUri !== currentUri) {
+  
+  // If URI changed or no client exists, re-initialize
+  if (latestUri !== currentUri || !dbClient) {
     currentUri = latestUri;
     dbConnected = false;
     dbClient = null;
   }
+
   if (!dbConnected && currentUri) {
     try {
       dbClient = new MongoClient(currentUri, {
-        connectTimeoutMS: 5000,
-        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 10000, // Increased for serverless stability
+        serverSelectionTimeoutMS: 10000,
       });
       await dbClient.connect();
       dbConnected = true;
-      console.log("Dynamically connected to MongoDB Atlas successfully!");
+      console.log("Connected to MongoDB Atlas successfully!");
     } catch (err) {
-      console.error("Dynamic connect retry failed for MongoDB Atlas:", err);
+      console.error("Connection failed for MongoDB Atlas:", err);
       dbConnected = false;
       dbClient = null;
     }
@@ -168,7 +173,12 @@ function writeFallback(data: FallbackData) {
 
 // Initialize fallback database with empty structures if not existing
 if (!fs.existsSync(FALLBACK_FILE)) {
-  writeFallback({ workers: [], yields: [], sales: [] });
+  try {
+    writeFallback({ workers: [], yields: [], sales: [] });
+  } catch (e) {
+    // In serverless environments, filesystem might be read-only
+    console.warn("Could not initialize fallback file (likely serverless environment)");
+  }
 }
 
 // REST API Endpoints
@@ -182,6 +192,7 @@ app.get("/api/status", async (req, res) => {
     provider: db ? "mongodb" : "file_fallback",
     uriConfigured: !!resolvedUri,
     projectId: resolvedUri ? "configured" : "none",
+    environment: process.env.NETLIFY ? "netlify" : "local",
   });
 });
 
@@ -417,8 +428,11 @@ app.post("/api/data/wipe", async (req, res) => {
   }
 });
 
+// Export the handler for Netlify Functions
+export const handler = serverless(app);
+
+// Local server startup logic
 async function startServer() {
-  // Vite dev server coupling or static production client hosting
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -427,10 +441,12 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      app.get("*", (req, res) => {
+        res.sendFile(path.join(distPath, "index.html"));
+      });
+    }
   }
 
   // Pre-connect dynamically
@@ -443,4 +459,9 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start the server if we are running in a non-serverless environment
+if (!process.env.NETLIFY && !process.env.LAMBDA_TASK_ROOT) {
+  startServer();
+}
+
+export default app;
