@@ -2,7 +2,6 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { MongoClient } from "mongodb";
-import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import serverless from "serverless-http";
 
@@ -63,86 +62,98 @@ app.use((req, res, next) => {
   next();
 });
 
-// Resolve MongoDB URI prioritizing actual environment variables first, falling back to .env.example file
+// Resolve MongoDB URI prioritizing actual environment variables first
 function resolveMongoUri(): string | undefined {
   if (process.env.MONGODB_URI) {
     return process.env.MONGODB_URI;
   }
-  try {
-    // In production/serverless, we should prioritize env vars and not strictly rely on filesystem
-    const examplePath = path.join(process.cwd(), ".env.example");
-    if (fs.existsSync(examplePath)) {
-      const content = fs.readFileSync(examplePath, "utf-8");
-      const lines = content.split(/\r?\n/);
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith("#")) continue;
-        const eqIdx = trimmed.indexOf("=");
-        if (eqIdx !== -1) {
-          const key = trimmed.substring(0, eqIdx).trim();
-          if (key === "MONGODB_URI") {
-            let val = trimmed.substring(eqIdx + 1).trim();
-            if (
-              (val.startsWith('"') && val.endsWith('"')) ||
-              (val.startsWith("'") && val.endsWith("'"))
-            ) {
-              val = val.slice(1, -1);
+  
+  // Only try to read .env.example if NOT on Netlify/Serverless to avoid unnecessary FS calls
+  if (!process.env.NETLIFY && !process.env.LAMBDA_TASK_ROOT) {
+    try {
+      const examplePath = path.join(process.cwd(), ".env.example");
+      if (fs.existsSync(examplePath)) {
+        const content = fs.readFileSync(examplePath, "utf-8");
+        const lines = content.split(/\r?\n/);
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("#")) continue;
+          const eqIdx = trimmed.indexOf("=");
+          if (eqIdx !== -1) {
+            const key = trimmed.substring(0, eqIdx).trim();
+            if (key === "MONGODB_URI") {
+              let val = trimmed.substring(eqIdx + 1).trim();
+              if (
+                (val.startsWith('"') && val.endsWith('"')) ||
+                (val.startsWith("'") && val.endsWith("'"))
+              ) {
+                val = val.slice(1, -1);
+              }
+              return val;
             }
-            return val;
           }
         }
       }
+    } catch (error) {
+      console.error("Error loading fallback MONGODB_URI from .env.example:", error);
     }
-  } catch (error) {
-    console.error(
-      "Error loading fallback custom MONGODB_URI from .env.example:",
-      error,
-    );
   }
   return undefined;
 }
 
-// Setup MongoDB Connection logic
 const dbName = "teaflow";
-let currentUri = resolveMongoUri();
-let dbClient: MongoClient | null = null;
-let dbConnected = false;
+
+// Global cached connection for serverless environments
+let cachedClient: MongoClient | null = null;
+let cachedDb: any = null;
 
 async function getDb() {
-  const latestUri = resolveMongoUri();
+  const uri = resolveMongoUri();
   
-  // If URI changed or no client exists, re-initialize
-  if (latestUri !== currentUri || !dbClient) {
-    console.log("MongoDB: URI changed or client not initialized. Re-connecting...");
-    currentUri = latestUri;
-    dbConnected = false;
-    dbClient = null;
+  if (!uri) {
+    console.warn("MongoDB: MONGODB_URI is not defined in environment variables.");
+    return null;
   }
 
-  if (!dbConnected && currentUri) {
+  // If we have a cached connection, reuse it
+  if (cachedClient && cachedDb) {
     try {
-      console.log("MongoDB: Attempting to connect to Atlas...");
-      dbClient = new MongoClient(currentUri, {
-        connectTimeoutMS: 15000, // Increased for serverless stability
-        serverSelectionTimeoutMS: 15000,
-        appName: "TeaFlowNetlify"
-      });
-      await dbClient.connect();
-      dbConnected = true;
-      console.log("MongoDB: Connected to MongoDB Atlas successfully!");
-    } catch (err) {
-      console.error("MongoDB: Connection failed for MongoDB Atlas:", err);
-      dbConnected = false;
-      dbClient = null;
+      // Quick ping to check if connection is still alive
+      await cachedDb.command({ ping: 1 });
+      return cachedDb;
+    } catch (e) {
+      console.log("MongoDB: Cached connection stale, reconnecting...");
+      cachedClient = null;
+      cachedDb = null;
     }
-  } else if (!currentUri) {
-    console.warn("MongoDB: MONGODB_URI is not defined. Using local file fallback.");
   }
 
-  if (dbConnected && dbClient) {
-    return dbClient.db(dbName);
+  try {
+    console.log("MongoDB: Connecting to Atlas Cluster...");
+    const client = new MongoClient(uri, {
+      connectTimeoutMS: 8000, // Stay under Netlify's 10s timeout
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 30000,
+      appName: "TeaFlowNetlify"
+    });
+    
+    await client.connect();
+    const db = client.db(dbName);
+    
+    // Cache the client and db for subsequent invocations
+    cachedClient = client;
+    cachedDb = db;
+    
+    console.log("MongoDB: Connected to Atlas successfully.");
+    return db;
+  } catch (err: any) {
+    console.error("MongoDB: Connection error:", err.message);
+    // Explicitly check for common errors
+    if (err.message.includes("ETIMEOUT") || err.message.includes("Could not connect to any servers")) {
+      console.error("TIP: Ensure your MongoDB Atlas Cluster has whitelisted 0.0.0.0/0 (Access from anywhere) for Netlify.");
+    }
+    return null;
   }
-  return null;
 }
 
 // Fallback JSON-based Database helper
@@ -437,37 +448,39 @@ app.post("/api/data/wipe", async (req, res) => {
 // Export the handler for Netlify Functions
 export const handler = serverless(app);
 
-// Local server startup logic
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    if (fs.existsSync(distPath)) {
-      app.use(express.static(distPath));
-      app.get("*", (req, res) => {
-        res.sendFile(path.join(distPath, "index.html"));
-      });
-    }
-  }
-
-  // Pre-connect dynamically
-  getDb().catch((e) => console.error("Initial database connection error:", e));
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(
-      `Express server powering tea estate management on http://localhost:${PORT}`,
-    );
-  });
-}
-
 // Only start the server if we are running in a non-serverless environment
 if (!process.env.NETLIFY && !process.env.LAMBDA_TASK_ROOT) {
-  startServer();
+  (async () => {
+    if (process.env.NODE_ENV !== "production") {
+      try {
+        const { createServer: createViteServer } = await import("vite");
+        const vite = await createViteServer({
+          server: { middlewareMode: true },
+          appType: "spa",
+        });
+        app.use(vite.middlewares);
+      } catch (e) {
+        console.error("Failed to load Vite:", e);
+      }
+    } else {
+      const distPath = path.join(process.cwd(), "dist");
+      if (fs.existsSync(distPath)) {
+        app.use(express.static(distPath));
+        app.get("*", (req, res) => {
+          res.sendFile(path.join(distPath, "index.html"));
+        });
+      }
+    }
+
+    // Pre-connect dynamically
+    getDb().catch((e) => console.error("Initial database connection error:", e));
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(
+        `Express server powering tea estate management on http://localhost:${PORT}`,
+      );
+    });
+  })();
 }
 
 export default app;
